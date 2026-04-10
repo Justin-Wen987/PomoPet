@@ -1,7 +1,4 @@
-// ========== app.js ==========
-// Main application logic: timer, tasks, gacha, recycling, settings
-
-import { DEFAULT_STATE, PET_TYPES, RARITY_WEIGHTS, RARITY_COINS } from './constants.js';
+import { DEFAULT_STATE, PET_TYPES, RARITY_WEIGHTS, RARITY_COINS, PATHS } from './constants.js';
 import { loadState, saveState } from './storage.js';
 import {
     playGachaSpin, playResultSound, playClockAlarm,
@@ -11,36 +8,31 @@ import {
 import {
     elements, buildClock, updateFlipClock, updateProgressBar, updateUI,
     renderTasks, renderCollection, renderDuplicateList, updateSelectedRewardPreview,
-    showRewardPopup, createSlotMachine
+    showRewardPopup, createSlotMachine, showSettingsModal
 } from './ui.js';
 
-// ---------- Global state ----------
 let state = loadState();
 let timerInterval = null;
-let timerMode = 'work';           // 'work' or 'break'
+let timerMode = 'work';
 let timeLeft = state.workDuration;
 let isTimerRunning = false;
 let currentFilter = 'all';
-let workClockTriggered = false;   // prevent alarm spam
+let workClockTriggered = false;
 let breakClockTriggered = false;
 
-// Generate unique ID for pets/tasks
 function generateId() {
     return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
-// ---------- Timer logic ----------
 function resetAlarmFlags() {
     workClockTriggered = false;
     breakClockTriggered = false;
 }
 
-// Timer tick: decrement time, play alarm at 6s left, switch sessions
 function timerTick() {
     if (timeLeft <= 0) return;
     const previousTime = timeLeft;
     timeLeft--;
-    // Alarm at exactly 6 seconds remaining (once per session)
     if (previousTime > 6 && timeLeft <= 6) {
         if (timerMode === 'work' && !workClockTriggered) {
             workClockTriggered = true;
@@ -54,14 +46,12 @@ function timerTick() {
     updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
     if (timeLeft === 0) {
         if (timerMode === 'work') {
-            // Switch to break
             timerMode = 'break';
             timeLeft = state.breakDuration;
             resetAlarmFlags();
             updateFlipClock(timeLeft);
             updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
         } else if (timerMode === 'break') {
-            // Complete a full pomodoro cycle
             state.tokens++;
             saveState(state);
             updateUI(state, currentFilter);
@@ -125,7 +115,6 @@ function applyTimerSettings() {
     updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
 }
 
-// ---------- Task management ----------
 function addTask() {
     const text = elements.taskInput.value.trim();
     if (!text) return;
@@ -158,13 +147,11 @@ function deleteTask(id) {
     renderTasks(state.tasks);
 }
 
-// ---------- Collection & Filter ----------
 function setFilter(filter) {
     currentFilter = filter;
     renderCollection(state.pets, currentFilter);
 }
 
-// ---------- Duplicate recycling ----------
 function selectAllDuplicates() {
     const checkboxes = document.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.checked = true);
@@ -211,7 +198,6 @@ function buyToken() {
     }
 }
 
-// ---------- Gacha ----------
 function drawPetWithSmoothSlot() {
     if (state.tokens < 1) return;
     playGachaSpin();
@@ -243,103 +229,35 @@ function drawPetWithSmoothSlot() {
     });
 }
 
-// ---------- Settings Modal ----------
-function showSettingsModal() {
-    const modal = document.createElement('div');
-    modal.className = 'settings-modal';
-    modal.innerHTML = `
-        <div class="settings-panel">
-            <h2>⚙️ Settings</h2>
-            <div class="setting-group" style="flex-direction: column; align-items: stretch;">
-                <label>🎵 Background Music</label>
-                <select id="bgm-select" class="bgm-select">
-                    ${PATHS.bgmList.map((track, idx) => `<option value="${idx}" ${idx === currentBgmIndex ? 'selected' : ''}>${track.name}</option>`).join('')}
-                </select>
-            </div>
-            <div class="setting-group"><label>💾 Export Save</label><button id="export-save">Export</button></div>
-            <div class="setting-group"><label>📂 Import Save</label><div class="custom-file-input"><button id="import-trigger">Choose File</button><span id="import-filename" class="file-name" style="display: none;"></span><input type="file" id="import-file-hidden" accept=".json" style="display: none;"></div></div>
-            <div class="setting-group"><label>⚠️ Danger Zone</label><button id="confirm-clear">Clear All Data</button></div>
-            <button id="close-settings" class="close-settings">Close</button>
-        </div>`;
-    document.body.appendChild(modal);
-    const bgmSelect = modal.querySelector('#bgm-select');
-    const exportBtn = modal.querySelector('#export-save');
-    const importTrigger = modal.querySelector('#import-trigger');
-    const importFileHidden = modal.querySelector('#import-file-hidden');
-    const fileNameSpan = modal.querySelector('#import-filename');
-    const confirmClearBtn = modal.querySelector('#confirm-clear');
-    const closeBtn = modal.querySelector('#close-settings');
-
-    function closeModal() { modal.remove(); }
-
-    bgmSelect.addEventListener('change', (e) => {
-        const idx = parseInt(e.target.value, 10);
-        setBackgroundMusic(idx);
-    });
-    exportBtn.addEventListener('click', () => {
-        const saveData = JSON.stringify(state, null, 2);
-        const blob = new Blob([saveData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `pomopet_save_${new Date().toISOString().slice(0,19)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-    importTrigger.addEventListener('click', () => importFileHidden.click());
-    importFileHidden.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            fileNameSpan.textContent = file.name;
-            fileNameSpan.style.display = 'inline-block';
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    const imported = JSON.parse(ev.target.result);
-                    if (typeof imported.tokens === 'number' && typeof imported.coins === 'number' &&
-                        Array.isArray(imported.pets) && Array.isArray(imported.tasks)) {
-                        if (imported.tasks) imported.tasks = imported.tasks.map(t => ({ ...t, completed: t.completed || false }));
-                        state = imported;
-                        saveState(state);
-                        stopTimer();
-                        timerMode = 'work';
-                        timeLeft = state.workDuration;
-                        resetAlarmFlags();
-                        buildClock(timeLeft);
-                        updateFlipClock(timeLeft);
-                        updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
-                        updateUI(state, currentFilter);
-                        alert('Save imported successfully!');
-                        closeModal();
-                    } else alert('Invalid save file');
-                } catch(err) { alert('Failed to parse'); }
-            };
-            reader.readAsText(file);
-        }
-    });
-    confirmClearBtn.addEventListener('click', () => {
-        if (confirm('⚠️ Are you sure? This will delete all your progress.')) {
-            localStorage.removeItem(STORAGE_KEY);
-            state = { ...DEFAULT_STATE };
-            saveState(state);
-            stopTimer();
-            timerMode = 'work';
-            timeLeft = state.workDuration;
-            resetAlarmFlags();
-            buildClock(timeLeft);
-            updateFlipClock(timeLeft);
-            updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
-            updateUI(state, currentFilter);
-            closeModal();
-        }
-    });
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+// Event handlers for import/clear
+function handleImportSave(imported) {
+    state = imported;
+    saveState(state);
+    stopTimer();
+    timerMode = 'work';
+    timeLeft = state.workDuration;
+    resetAlarmFlags();
+    buildClock(timeLeft);
+    updateFlipClock(timeLeft);
+    updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
+    updateUI(state, currentFilter);
 }
 
-// ---------- Event listeners ----------
+function handleClearData() {
+    localStorage.removeItem('pomopet_data');
+    state = { ...DEFAULT_STATE };
+    saveState(state);
+    stopTimer();
+    timerMode = 'work';
+    timeLeft = state.workDuration;
+    resetAlarmFlags();
+    buildClock(timeLeft);
+    updateFlipClock(timeLeft);
+    updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
+    updateUI(state, currentFilter);
+}
+
+// Event listeners
 elements.timerStart.addEventListener('click', startTimer);
 elements.timerPause.addEventListener('click', stopTimer);
 elements.timerReset.addEventListener('click', resetTimer);
@@ -356,7 +274,6 @@ elements.buyTokenBtn.addEventListener('click', buyToken);
 elements.drawBtn.addEventListener('click', drawPetWithSmoothSlot);
 elements.openSettingsBtn.addEventListener('click', showSettingsModal);
 
-// Toggle mute and update icon
 elements.soundToggle.addEventListener('click', () => {
     const newMuted = toggleBgmMute();
     const soundIconUnmuted = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -373,11 +290,12 @@ elements.soundToggle.addEventListener('click', () => {
     elements.soundToggle.innerHTML = newMuted ? soundIconMuted : soundIconUnmuted;
 });
 
-// Custom events for tasks
 document.addEventListener('toggle-task', (e) => toggleTask(e.detail.id));
 document.addEventListener('delete-task', (e) => deleteTask(e.detail.id));
+document.addEventListener('import-save', (e) => handleImportSave(e.detail));
+document.addEventListener('clear-data', handleClearData);
 
-// ---------- Initialization ----------
+// Initialization
 loadBgmPreference();
 bindGlobalInteraction();
 elements.workMinInput.value = Math.floor(state.workDuration / 60);
@@ -390,7 +308,6 @@ updateFlipClock(timeLeft);
 updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
 updateUI(state, currentFilter);
 
-// Set initial sound icon based on saved mute state
 const soundIconUnmuted = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
     <rect x="4" y="12" width="8" height="8" fill="#8E8E8E" stroke="#000" stroke-width="1"/>
     <polygon points="12,12 20,6 20,26 12,20" fill="#B0B0B0" stroke="#000" stroke-width="1"/>
