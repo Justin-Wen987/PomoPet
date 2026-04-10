@@ -1,6 +1,6 @@
 // ========== constants.js ==========
 // Defines all static data for the game: pet types, rarity weights, coin values, audio paths, and default state.
-//Pet Background color: #fff7e8
+// All exported objects are frozen to prevent accidental modification at runtime.
 
 // Helper to deeply freeze an object (including nested objects/arrays)
 function deepFreeze(obj) {
@@ -45,7 +45,8 @@ export const PATHS = deepFreeze({
     bgmList: [
         { name: '10℃', file: 'music/10℃.mp3' },
         { name: 'Morning', file: 'music/Morning.mp3' },
-        { name: 'サンタは中央線でやってくる', file: 'music/サンタは中央線でやってくる.mp3' }
+        { name: 'サンタは中央線でやってくる', file: 'music/サンタは中央線でやってくる.mp3' },
+        { name: 'nop', file: 'music/nop.mp3' }
     ]
 });
 
