@@ -1,10 +1,7 @@
-// ========== ui.js ==========
-// All DOM manipulations, flip clock, popups, slot machine
+import { RARITY_COINS, PET_TYPES, PATHS } from './constants.js';
+import { playGachaSpin, stopGachaSpin, playResultSound, setBackgroundMusic, currentBgmIndex } from './audio.js';
+import { saveState, loadState } from './storage.js';
 
-import { RARITY_COINS, PET_TYPES } from './constants.js';
-import { playGachaSpin, stopGachaSpin, playResultSound } from './audio.js';
-
-// DOM element references
 export const elements = {
     tokenSpan: document.getElementById('token-count'),
     coinSpan: document.getElementById('coin-count'),
@@ -34,11 +31,9 @@ export const elements = {
     clockContainer: document.getElementById('flip-clock')
 };
 
-// Flip clock internal variables
 let colWrappers = [];
 let lastDigits = ['0','0','0','0'];
 
-// Convert seconds to array of 4 digits [min10, min1, sec10, sec1]
 function getDigitArray(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -47,7 +42,6 @@ function getDigitArray(seconds) {
     return [mm[0], mm[1], ss[0], ss[1]];
 }
 
-// Create a flip column for a single digit
 function createFlipCol(initialDigit) {
     const colDiv = document.createElement('div');
     colDiv.className = 'col';
@@ -70,7 +64,6 @@ function createFlipCol(initialDigit) {
     return {
         element: colDiv,
         toggleActive: () => flip.classList.toggle('active'),
-        getCurr: () => currStatic.dataset.t,
         setCurr: (digit) => {
             flipCurr.dataset.t = digit;
             currStatic.dataset.t = digit;
@@ -82,7 +75,6 @@ function createFlipCol(initialDigit) {
     };
 }
 
-// Build the flip clock DOM
 export function buildClock(initialSeconds) {
     elements.clockContainer.innerHTML = '';
     colWrappers = [];
@@ -103,7 +95,6 @@ export function buildClock(initialSeconds) {
     lastDigits = [...digits];
 }
 
-// Update clock display with flip animation
 export function updateFlipClock(timeLeft) {
     const newDigits = getDigitArray(timeLeft);
     for (let i = 0; i < 4; i++) {
@@ -122,7 +113,6 @@ export function updateFlipClock(timeLeft) {
     }
 }
 
-// Update timer progress bar and mode text
 export function updateProgressBar(timeLeft, timerMode, workDuration, breakDuration) {
     const total = timerMode === 'work' ? workDuration : breakDuration;
     const percent = (timeLeft / total) * 100;
@@ -131,7 +121,6 @@ export function updateProgressBar(timeLeft, timerMode, workDuration, breakDurati
     elements.timerModeText.textContent = timerMode === 'work' ? 'Work Session' : 'Break Session';
 }
 
-// Update all UI based on state
 export function updateUI(state, currentFilter) {
     elements.tokenSpan.textContent = state.tokens;
     elements.coinSpan.textContent = state.coins;
@@ -142,7 +131,6 @@ export function updateUI(state, currentFilter) {
     elements.buyTokenBtn.disabled = state.coins < 100;
 }
 
-// Render task list
 export function renderTasks(tasks) {
     elements.taskList.innerHTML = '';
     tasks.forEach(task => {
@@ -168,7 +156,6 @@ export function renderTasks(tasks) {
     });
 }
 
-// Render pet collection gallery with filters
 export function renderCollection(pets, currentFilter) {
     let filtered = pets;
     if (currentFilter !== 'all') filtered = pets.filter(p => p.rarity === currentFilter);
@@ -182,7 +169,6 @@ export function renderCollection(pets, currentFilter) {
     });
 }
 
-// Render the list of duplicate pets with checkboxes
 export function renderDuplicateList(pets) {
     const dupPets = pets.filter(p => p.isDuplicate);
     if (dupPets.length === 0) {
@@ -218,7 +204,6 @@ export function renderDuplicateList(pets) {
     updateSelectedRewardPreview(pets);
 }
 
-// Update the coin reward preview based on selected duplicates
 export function updateSelectedRewardPreview(pets) {
     const checkboxes = document.querySelectorAll('.dupe-checkbox');
     let totalReward = 0;
@@ -233,7 +218,6 @@ export function updateSelectedRewardPreview(pets) {
     if (totalReward === 0) elements.selectedRewardSpan.textContent = '+0 Coins';
 }
 
-// Show the "Great work!" reward popup (auto-closes after 3s, has Back button)
 export function showRewardPopup() {
     const existingOverlay = document.querySelector('.cycle-overlay');
     if (existingOverlay) existingOverlay.remove();
@@ -268,7 +252,6 @@ export function showRewardPopup() {
     });
 }
 
-// Slot machine animation for gacha
 export function createSlotMachine(targetPetIndex, rarity, onClose) {
     const ITEM_WIDTH = 120;
     const CENTER_INDEX = 1;
@@ -323,4 +306,80 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
         }
     }
     requestAnimationFrame(animate);
+}
+
+// ---------- Settings Modal (moved from app.js) ----------
+export function showSettingsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'settings-modal';
+    modal.innerHTML = `
+        <div class="settings-panel">
+            <h2>⚙️ Settings</h2>
+            <div class="setting-group" style="flex-direction: column; align-items: stretch;">
+                <label>🎵 Background Music</label>
+                <select id="bgm-select" class="bgm-select">
+                    ${PATHS.bgmList.map((track, idx) => `<option value="${idx}" ${idx === currentBgmIndex ? 'selected' : ''}>${track.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="setting-group"><label>💾 Export Save</label><button id="export-save">Export</button></div>
+            <div class="setting-group"><label>📂 Import Save</label><div class="custom-file-input"><button id="import-trigger">Choose File</button><span id="import-filename" class="file-name" style="display: none;"></span><input type="file" id="import-file-hidden" accept=".json" style="display: none;"></div></div>
+            <div class="setting-group"><label>⚠️ Danger Zone</label><button id="confirm-clear">Clear All Data</button></div>
+            <button id="close-settings" class="close-settings">Close</button>
+        </div>`;
+    document.body.appendChild(modal);
+    const bgmSelect = modal.querySelector('#bgm-select');
+    const exportBtn = modal.querySelector('#export-save');
+    const importTrigger = modal.querySelector('#import-trigger');
+    const importFileHidden = modal.querySelector('#import-file-hidden');
+    const fileNameSpan = modal.querySelector('#import-filename');
+    const confirmClearBtn = modal.querySelector('#confirm-clear');
+    const closeBtn = modal.querySelector('#close-settings');
+    function closeModal() { modal.remove(); }
+    bgmSelect.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        setBackgroundMusic(idx);
+    });
+    exportBtn.addEventListener('click', () => {
+        const state = loadState();  // 获取当前状态
+        const saveData = JSON.stringify(state, null, 2);
+        const blob = new Blob([saveData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pomopet_save_${new Date().toISOString().slice(0,19)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+    importTrigger.addEventListener('click', () => importFileHidden.click());
+    importFileHidden.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            fileNameSpan.textContent = file.name;
+            fileNameSpan.style.display = 'inline-block';
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (typeof imported.tokens === 'number' && typeof imported.coins === 'number' &&
+                        Array.isArray(imported.pets) && Array.isArray(imported.tasks)) {
+                        if (imported.tasks) imported.tasks = imported.tasks.map(t => ({ ...t, completed: t.completed || false }));
+                        // 需要将状态保存并刷新UI，这里通过事件通知app.js
+                        document.dispatchEvent(new CustomEvent('import-save', { detail: imported }));
+                        closeModal();
+                    } else alert('Invalid save file');
+                } catch(err) { alert('Failed to parse'); }
+            };
+            reader.readAsText(file);
+        }
+    });
+    confirmClearBtn.addEventListener('click', () => {
+        if (confirm('⚠️ Are you sure? This will delete all your progress.')) {
+            document.dispatchEvent(new CustomEvent('clear-data'));
+            closeModal();
+        }
+    });
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
