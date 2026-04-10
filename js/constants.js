@@ -1,7 +1,8 @@
 // ========== constants.js ==========
+// Defines all static data for the game: pet types, rarity weights, coin values, audio paths, and default state.
 //Pet Background color: #fff7e8
 
-// List of all pet types with their properties
+// List of all collectible pets with their properties
 export const PET_TYPES = [
     { typeId: 'cat', name: 'Kitty', rarity: 'common', image: 'image/Kitty.jpg' },
     { typeId: 'dog', name: 'Puppy', rarity: 'common', image: 'image/Puppy.jpeg' },
@@ -12,17 +13,17 @@ export const PET_TYPES = [
     { typeId: 'phoenix', name: 'Phoenix', rarity: 'rare', image: 'image/Phoenix.jpg' }
 ];
 
-// Probability weights for each rarity (sum = 100)
+// Probability distribution for gacha draws (total = 100)
 export const RARITY_WEIGHTS = { common: 75, uncommon: 20, rare: 5 };
 
-// Coin reward when recycling a duplicate pet
+// Coin reward values when recycling a duplicate pet by rarity
 export const RARITY_COINS = {
     common: 5,
     uncommon: 10,
     rare: 20
 };
 
-// File paths for audio assets
+// File paths for all audio assets used in the game
 export const PATHS = {
     gacha: 'music/gacha.mp3',
     reveal: 'music/reveal.mp3',
@@ -35,7 +36,7 @@ export const PATHS = {
     ]
 };
 
-// Default game state when starting fresh
+// Initial game state when no saved data exists
 export const DEFAULT_STATE = {
     tokens: 0,
     coins: 0,

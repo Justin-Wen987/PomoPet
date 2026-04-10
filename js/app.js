@@ -1,3 +1,7 @@
+// ========== app.js ==========
+// Main application logic: timer, tasks, gacha, recycling, settings
+
+// Import constants and modules
 import { DEFAULT_STATE, PET_TYPES, RARITY_WEIGHTS, RARITY_COINS, PATHS } from './constants.js';
 import { loadState, saveState } from './storage.js';
 import {
@@ -11,28 +15,33 @@ import {
     showRewardPopup, createSlotMachine, showSettingsModal
 } from './ui.js';
 
-let state = loadState();
-let timerInterval = null;
-let timerMode = 'work';
-let timeLeft = state.workDuration;
-let isTimerRunning = false;
-let currentFilter = 'all';
-let workClockTriggered = false;
-let breakClockTriggered = false;
+// ---------- Game state ----------
+let state = loadState();               // Load saved data or default state
+let timerInterval = null;             // Timer interval ID
+let timerMode = 'work';               // Current timer mode: 'work' or 'break'
+let timeLeft = state.workDuration;    // Seconds remaining in current session
+let isTimerRunning = false;           // Whether timer is actively ticking
+let currentFilter = 'all';            // Current rarity filter for collection gallery
+let workClockTriggered = false;       // Prevents alarm spam for work session
+let breakClockTriggered = false;      // Prevents alarm spam for break session
 
+// Generate unique ID for tasks and pets
 function generateId() {
     return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
+// Reset alarm flags when switching timer mode
 function resetAlarmFlags() {
     workClockTriggered = false;
     breakClockTriggered = false;
 }
 
+// Timer tick: decrement time, play alarm at 6 seconds remaining, switch sessions
 function timerTick() {
     if (timeLeft <= 0) return;
     const previousTime = timeLeft;
     timeLeft--;
+    // Trigger alarm exactly when crossing the 6-second threshold (once per session)
     if (previousTime > 6 && timeLeft <= 6) {
         if (timerMode === 'work' && !workClockTriggered) {
             workClockTriggered = true;
@@ -42,16 +51,20 @@ function timerTick() {
             playClockAlarm();
         }
     }
+    // Update UI
     updateFlipClock(timeLeft);
     updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
+    // Handle session completion
     if (timeLeft === 0) {
         if (timerMode === 'work') {
+            // Switch to break session
             timerMode = 'break';
             timeLeft = state.breakDuration;
             resetAlarmFlags();
             updateFlipClock(timeLeft);
             updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
         } else if (timerMode === 'break') {
+            // Complete a full pomodoro cycle: reward token, show popup, reset timer
             state.tokens++;
             saveState(state);
             updateUI(state, currentFilter);
@@ -66,8 +79,10 @@ function timerTick() {
     }
 }
 
+// Start the timer if not already running
 function startTimer() {
     if (isTimerRunning) return;
+    // Initialize timer if it was at zero
     if (timeLeft === 0 && timerMode === 'work') {
         timeLeft = state.workDuration;
         resetAlarmFlags();
@@ -84,12 +99,14 @@ function startTimer() {
     timerInterval = setInterval(timerTick, 1000);
 }
 
+// Stop the timer and clear interval
 function stopTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = null;
     isTimerRunning = false;
 }
 
+// Reset timer to work session with original duration
 function resetTimer() {
     stopTimer();
     timerMode = 'work';
@@ -99,6 +116,7 @@ function resetTimer() {
     updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
 }
 
+// Apply new work/break durations from settings inputs
 function applyTimerSettings() {
     const workMin = parseInt(elements.workMinInput.value, 10);
     const breakMin = parseInt(elements.breakMinInput.value, 10);
@@ -115,6 +133,8 @@ function applyTimerSettings() {
     updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
 }
 
+// ---------- Task management ----------
+// Add a new task from input field
 function addTask() {
     const text = elements.taskInput.value.trim();
     if (!text) return;
@@ -124,6 +144,7 @@ function addTask() {
     renderTasks(state.tasks);
 }
 
+// Toggle task completion status and award token if newly completed
 function toggleTask(id) {
     const task = state.tasks.find(t => t.id === id);
     if (task) {
@@ -133,7 +154,7 @@ function toggleTask(id) {
             state.tokens++;
             saveState(state);
             updateUI(state, currentFilter);
-            showRewardPopup();
+            showRewardPopup();   // Reward popup for task completion
         } else {
             saveState(state);
             updateUI(state, currentFilter);
@@ -141,29 +162,36 @@ function toggleTask(id) {
     }
 }
 
+// Delete a task by id
 function deleteTask(id) {
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveState(state);
     renderTasks(state.tasks);
 }
 
+// ---------- Collection & Filter ----------
+// Set current rarity filter and re-render collection
 function setFilter(filter) {
     currentFilter = filter;
     renderCollection(state.pets, currentFilter);
 }
 
+// ---------- Duplicate recycling ----------
+// Select all duplicate checkboxes
 function selectAllDuplicates() {
     const checkboxes = document.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.checked = true);
     updateSelectedRewardPreview(state.pets);
 }
 
+// Deselect all duplicate checkboxes
 function deselectAllDuplicates() {
     const checkboxes = document.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.checked = false);
     updateSelectedRewardPreview(state.pets);
 }
 
+// Recycle selected duplicate pets: remove them and add coins
 function recycleSelected() {
     const checkboxes = document.querySelectorAll('.dupe-checkbox:checked');
     if (checkboxes.length === 0) {
@@ -187,6 +215,7 @@ function recycleSelected() {
     alert(`Recycled ${idsToRemove.length} pet(s) and earned ${totalCoins} coins!`);
 }
 
+// Exchange 100 coins for 1 token
 function buyToken() {
     if (state.coins >= 100) {
         state.coins -= 100;
@@ -198,11 +227,14 @@ function buyToken() {
     }
 }
 
+// ---------- Gacha ----------
+// Draw a random pet using slot machine animation
 function drawPetWithSmoothSlot() {
     if (state.tokens < 1) return;
     playGachaSpin();
     elements.drawBtn.disabled = true;
     state.tokens--;
+    // Determine rarity based on weights
     const rand = Math.random() * 100;
     let selectedRarity;
     if (rand < RARITY_WEIGHTS.common) selectedRarity = 'common';
@@ -229,7 +261,8 @@ function drawPetWithSmoothSlot() {
     });
 }
 
-// Event handlers for import/clear
+// ---------- Import/Export event handlers ----------
+// Handle imported save data from settings modal
 function handleImportSave(imported) {
     state = imported;
     saveState(state);
@@ -243,6 +276,7 @@ function handleImportSave(imported) {
     updateUI(state, currentFilter);
 }
 
+// Handle clear all data request from settings modal
 function handleClearData() {
     localStorage.removeItem('pomopet_data');
     state = { ...DEFAULT_STATE };
@@ -257,7 +291,7 @@ function handleClearData() {
     updateUI(state, currentFilter);
 }
 
-// Event listeners
+// ---------- Event listeners for DOM elements ----------
 elements.timerStart.addEventListener('click', startTimer);
 elements.timerPause.addEventListener('click', stopTimer);
 elements.timerReset.addEventListener('click', resetTimer);
@@ -274,6 +308,7 @@ elements.buyTokenBtn.addEventListener('click', buyToken);
 elements.drawBtn.addEventListener('click', drawPetWithSmoothSlot);
 elements.openSettingsBtn.addEventListener('click', showSettingsModal);
 
+// Sound toggle: update mute state and icon
 elements.soundToggle.addEventListener('click', () => {
     const newMuted = toggleBgmMute();
     const soundIconUnmuted = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -290,24 +325,31 @@ elements.soundToggle.addEventListener('click', () => {
     elements.soundToggle.innerHTML = newMuted ? soundIconMuted : soundIconUnmuted;
 });
 
+// Custom events for task operations
 document.addEventListener('toggle-task', (e) => toggleTask(e.detail.id));
 document.addEventListener('delete-task', (e) => deleteTask(e.detail.id));
 document.addEventListener('import-save', (e) => handleImportSave(e.detail));
 document.addEventListener('clear-data', handleClearData);
 
-// Initialization
+// ---------- Initialization ----------
+// Load background music preferences and bind interaction
 loadBgmPreference();
 bindGlobalInteraction();
+
+// Set timer input fields from saved state
 elements.workMinInput.value = Math.floor(state.workDuration / 60);
 elements.breakMinInput.value = Math.floor(state.breakDuration / 60);
 timeLeft = state.workDuration;
 timerMode = 'work';
 resetAlarmFlags();
+
+// Build and update UI components
 buildClock(timeLeft);
 updateFlipClock(timeLeft);
 updateProgressBar(timeLeft, timerMode, state.workDuration, state.breakDuration);
 updateUI(state, currentFilter);
 
+// Set initial sound icon based on saved mute state
 const soundIconUnmuted = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
     <rect x="4" y="12" width="8" height="8" fill="#8E8E8E" stroke="#000" stroke-width="1"/>
     <polygon points="12,12 20,6 20,26 12,20" fill="#B0B0B0" stroke="#000" stroke-width="1"/>

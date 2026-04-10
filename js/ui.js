@@ -1,8 +1,11 @@
 // ========== ui.js ==========
+// All DOM manipulations, flip clock, popups, slot machine, and settings modal
+
 import { RARITY_COINS, PET_TYPES, PATHS } from './constants.js';
 import { playGachaSpin, stopGachaSpin, playResultSound, setBackgroundMusic, currentBgmIndex } from './audio.js';
 import { saveState, loadState } from './storage.js';
 
+// Collection of DOM element references used throughout the UI
 export const elements = {
     tokenSpan: document.getElementById('token-count'),
     coinSpan: document.getElementById('coin-count'),
@@ -32,10 +35,11 @@ export const elements = {
     clockContainer: document.getElementById('flip-clock')
 };
 
-// Flip clock internal variables
+// Flip clock internal state: column wrappers and current digits
 let colWrappers = [];
 let lastDigits = ['0','0','0','0'];
 
+// Convert total seconds to array of 4 digits [min10, min1, sec10, sec1]
 function getDigitArray(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -44,6 +48,7 @@ function getDigitArray(seconds) {
     return [mm[0], mm[1], ss[0], ss[1]];
 }
 
+// Create a flip column DOM element for a single digit
 function createFlipCol(initialDigit) {
     const colDiv = document.createElement('div');
     colDiv.className = 'col';
@@ -77,6 +82,7 @@ function createFlipCol(initialDigit) {
     };
 }
 
+// Build the entire flip clock from scratch with given initial seconds
 export function buildClock(initialSeconds) {
     elements.clockContainer.innerHTML = '';
     colWrappers = [];
@@ -97,6 +103,7 @@ export function buildClock(initialSeconds) {
     lastDigits = [...digits];
 }
 
+// Update the flip clock display with new time, applying flip animations
 export function updateFlipClock(timeLeft) {
     const newDigits = getDigitArray(timeLeft);
     for (let i = 0; i < 4; i++) {
@@ -115,6 +122,7 @@ export function updateFlipClock(timeLeft) {
     }
 }
 
+// Update timer progress bar width and session mode text
 export function updateProgressBar(timeLeft, timerMode, workDuration, breakDuration) {
     const total = timerMode === 'work' ? workDuration : breakDuration;
     const percent = (timeLeft / total) * 100;
@@ -123,6 +131,7 @@ export function updateProgressBar(timeLeft, timerMode, workDuration, breakDurati
     elements.timerModeText.textContent = timerMode === 'work' ? 'Work Session' : 'Break Session';
 }
 
+// Update all UI elements based on current game state
 export function updateUI(state, currentFilter) {
     elements.tokenSpan.textContent = state.tokens;
     elements.coinSpan.textContent = state.coins;
@@ -133,6 +142,7 @@ export function updateUI(state, currentFilter) {
     elements.buyTokenBtn.disabled = state.coins < 100;
 }
 
+// Render the task list from tasks array
 export function renderTasks(tasks) {
     elements.taskList.innerHTML = '';
     tasks.forEach(task => {
@@ -158,6 +168,7 @@ export function renderTasks(tasks) {
     });
 }
 
+// Render the pet collection gallery with current rarity filter
 export function renderCollection(pets, currentFilter) {
     let filtered = pets;
     if (currentFilter !== 'all') filtered = pets.filter(p => p.rarity === currentFilter);
@@ -171,6 +182,7 @@ export function renderCollection(pets, currentFilter) {
     });
 }
 
+// Render the list of duplicate pets with checkboxes for recycling
 export function renderDuplicateList(pets) {
     const dupPets = pets.filter(p => p.isDuplicate);
     if (dupPets.length === 0) {
@@ -206,6 +218,7 @@ export function renderDuplicateList(pets) {
     updateSelectedRewardPreview(pets);
 }
 
+// Update the displayed total coin reward based on selected duplicate checkboxes
 export function updateSelectedRewardPreview(pets) {
     const checkboxes = document.querySelectorAll('.dupe-checkbox');
     let totalReward = 0;
@@ -220,6 +233,7 @@ export function updateSelectedRewardPreview(pets) {
     if (totalReward === 0) elements.selectedRewardSpan.textContent = '+0 Coins';
 }
 
+// Show the "Great work!" reward popup (auto-closes after 3 seconds, has Back button)
 export function showRewardPopup() {
     const existingOverlay = document.querySelector('.cycle-overlay');
     if (existingOverlay) existingOverlay.remove();
@@ -254,6 +268,7 @@ export function showRewardPopup() {
     });
 }
 
+// Create and animate a slot machine modal for gacha draws
 export function createSlotMachine(targetPetIndex, rarity, onClose) {
     const ITEM_WIDTH = 120;
     const CENTER_INDEX = 1;
@@ -311,6 +326,7 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
 }
 
 // ---------- Settings Modal ----------
+// Build and display the settings modal with music selection, save import/export, and data reset
 export function showSettingsModal() {
     const modal = document.createElement('div');
     modal.className = 'settings-modal';

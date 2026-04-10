@@ -1,4 +1,5 @@
 /* ========== styles.css ========== */
+
 /* Global reset and base styles */
 * {
     box-sizing: border-box;
@@ -6,6 +7,7 @@
     padding: 0;
 }
 
+/* Body background, font, and touch behavior */
 body {
     font-family: 'Courier New', monospace;
     background: #f4e9d8;
@@ -14,12 +16,13 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Main app container - max width and centering */
 #app {
     max-width: 1200px;
     margin: 0 auto;
 }
 
-/* Header styles */
+/* Header styles: flex layout, border, shadow */
 header {
     display: flex;
     flex-wrap: wrap;
@@ -32,6 +35,7 @@ header {
     box-shadow: 8px 8px 0 #4a3f35;
 }
 
+/* Header title text size and shadow */
 header h1 {
     font-size: clamp(20px, 5vw, 28px);
     color: #fff7e8;
@@ -41,7 +45,7 @@ header h1 {
     gap: 10px;
 }
 
-/* Settings and sound icon buttons */
+/* Settings and sound icon buttons - remove default styles */
 .settings-icon, .sound-icon {
     background: none;
     border: none;
@@ -60,19 +64,21 @@ header h1 {
     box-shadow: none;
 }
 
+/* Icon SVG size */
 .settings-icon svg, .sound-icon svg {
     width: 32px;
     height: 32px;
     display: block;
 }
 
-/* Token and coin balances */
+/* Token and coin balances container */
 .balances {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
 }
 
+/* Individual balance badge */
 .balances span {
     font-size: 18px;
     background: #fff7e8;
@@ -85,6 +91,7 @@ header h1 {
     gap: 8px;
 }
 
+/* Icon inside balance */
 .balances span svg {
     width: 28px;
     height: 28px;
@@ -92,14 +99,14 @@ header h1 {
     vertical-align: middle;
 }
 
-/* Main layout: two columns */
+/* Main content: two columns */
 main {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
 
-/* Card component */
+/* Card component - common container style */
 .card {
     background: #e8d9c5;
     border: 4px solid #4a3f35;
@@ -108,6 +115,7 @@ main {
     box-shadow: 8px 8px 0 #4a3f35;
 }
 
+/* Card title */
 .card h2 {
     font-size: 20px;
     border-bottom: 2px solid #4a3f35;
@@ -118,6 +126,7 @@ main {
     gap: 10px;
 }
 
+/* Card title icon */
 .card h2 svg {
     width: 32px;
     height: 32px;
@@ -125,12 +134,13 @@ main {
     vertical-align: middle;
 }
 
+/* Card subtitle */
 .card h3 {
     font-size: 16px;
     margin: 10px 0 5px;
 }
 
-/* Button styles */
+/* General button styles */
 button {
     background: #d1c0a8;
     border: 2px solid #4a3f35;
@@ -146,11 +156,13 @@ button {
     min-height: 48px;
 }
 
+/* Button press effect */
 button:active {
     transform: translate(4px, 4px);
     box-shadow: none;
 }
 
+/* Disabled button style */
 button:disabled {
     opacity: 0.5;
     transform: none;
@@ -158,7 +170,7 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Flip clock styles */
+/* Flip clock variables */
 :root {
     --col-width: 90px;
     --col-height: 120px;
@@ -168,6 +180,7 @@ button:disabled {
     --col-bg: #2c2c2c;
 }
 
+/* Flip clock container */
 .flip-clock {
     display: flex;
     justify-content: center;
@@ -178,12 +191,14 @@ button:disabled {
     font-weight: 700;
 }
 
+/* Individual digit column */
 .col {
     width: var(--col-width);
     height: var(--col-height);
     perspective: var(--col-height);
 }
 
+/* Separator between minutes and seconds */
 .separator {
     font-size: 72px;
     font-weight: bold;
@@ -193,6 +208,7 @@ button:disabled {
     line-height: var(--col-height);
 }
 
+/* Flip card halves */
 .curr,
 .next {
     position: relative;
@@ -207,6 +223,7 @@ button:disabled {
     box-shadow: 4px 4px 0 #4a3f35;
 }
 
+/* Digit text for flip elements */
 .flip .curr::before,
 .flip .next::before,
 .col > .curr::before,
@@ -220,37 +237,36 @@ button:disabled {
     right: 0;
 }
 
+/* Positioning of digit in different halves */
 .flip .curr::before,
 .col > .next::before {
     top: 0;
 }
-
 .flip .next::before,
 .col > .curr::before {
     bottom: 0;
 }
 
+/* Border styling for half elements */
 .flip .curr,
 .col > .next {
     border-bottom: var(--center-border);
 }
-
 .flip .next,
 .col > .curr {
     border-top: var(--center-border);
 }
 
+/* Flip animation transform */
 .flip .next {
     transform: rotateX(-180deg);
     backface-visibility: hidden;
 }
-
 .flip .curr {
     position: absolute;
     top: 0;
     backface-visibility: hidden;
 }
-
 .flip {
     position: absolute;
     width: var(--col-width);
@@ -260,13 +276,12 @@ button:disabled {
     transition: transform 0s;
     transform: rotateX(0);
 }
-
 .flip.active {
     transition: all 0.5s ease-in-out;
     transform: rotateX(-180deg);
 }
 
-/* Timer progress bar */
+/* Timer progress bar container */
 .timer-progress {
     width: 100%;
     height: 40px;
@@ -279,12 +294,14 @@ button:disabled {
     overflow: hidden;
 }
 
+/* Filling bar inside progress */
 .timer-bar {
     height: 100%;
     width: 100%;
     transition: width 1s linear;
 }
 
+/* Text overlay on progress bar */
 .timer-mode-text {
     position: absolute;
     top: 0;
@@ -304,6 +321,7 @@ button:disabled {
     z-index: 2;
 }
 
+/* Timer control buttons row */
 .timer-controls {
     display: flex;
     justify-content: center;
@@ -311,6 +329,7 @@ button:disabled {
     margin-top: 15px;
 }
 
+/* Timer settings row */
 .timer-settings {
     display: flex;
     flex-wrap: wrap;
@@ -322,6 +341,7 @@ button:disabled {
     border-bottom: 2px dashed #4a3f35;
 }
 
+/* Label inside timer settings */
 .timer-settings label {
     font-size: 16px;
     display: flex;
@@ -329,6 +349,7 @@ button:disabled {
     gap: 6px;
 }
 
+/* Number inputs for work/break minutes */
 .timer-settings input {
     width: 70px;
     padding: 8px;
@@ -339,13 +360,14 @@ button:disabled {
     font-size: 16px;
 }
 
-/* Task list */
+/* Add task row */
 .add-task {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
 }
 
+/* Text input for new task */
 input[type="text"] {
     flex: 1;
     padding: 12px;
@@ -355,10 +377,12 @@ input[type="text"] {
     font-size: 16px;
 }
 
+/* Task list container */
 ul {
     list-style: none;
 }
 
+/* Individual task item */
 li {
     display: flex;
     align-items: center;
@@ -368,18 +392,20 @@ li {
     font-size: 16px;
 }
 
+/* Completed task text */
 li.completed span {
     text-decoration: line-through;
     color: #888;
 }
 
+/* Task checkbox */
 li input[type="checkbox"] {
     width: 24px;
     height: 24px;
     cursor: pointer;
 }
 
-/* Collection gallery filters */
+/* Filter buttons for collection */
 .filter-buttons {
     display: flex;
     gap: 8px;
@@ -387,13 +413,14 @@ li input[type="checkbox"] {
     flex-wrap: wrap;
 }
 
+/* Pet collection grid */
 .pet-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     gap: 10px;
 }
 
-/* Pet item styling */
+/* Individual pet card in gallery */
 .pet-item {
     text-align: center;
     border-width: 3px;
@@ -409,26 +436,27 @@ li input[type="checkbox"] {
     transition: all 0.1s ease;
 }
 
+/* Rarity specific border colors */
 .pet-item.rarity-common {
     border-color: #a0a0a0;
     box-shadow: 0 0 0 1px #a0a0a0 inset, 4px 4px 0 #4a3f35;
 }
-
 .pet-item.rarity-uncommon {
     border-color: #3b82f6;
     box-shadow: 0 0 0 1px #3b82f6 inset, 4px 4px 0 #4a3f35;
 }
-
 .pet-item.rarity-rare {
     border-color: #ef4444;
     box-shadow: 0 0 0 1px #ef4444 inset, 4px 4px 0 #4a3f35;
 }
 
+/* Duplicate pet styling */
 .pet-item.duplicate {
     opacity: 0.6;
     filter: grayscale(50%);
 }
 
+/* Pet image */
 .pet-item img {
     width: 64px;
     height: 64px;
@@ -437,12 +465,14 @@ li input[type="checkbox"] {
     margin: 0 auto;
 }
 
+/* Pet name */
 .pet-item p {
     font-size: 12px;
     margin-top: 4px;
     word-break: break-word;
 }
 
+/* Duplicate badge on pet card */
 .duplicate-badge {
     position: absolute;
     top: 2px;
@@ -465,6 +495,7 @@ select {
     min-width: 200px;
 }
 
+/* Coin reward preview badge */
 .coin-preview {
     display: inline-block;
     background: #4a3f35;
@@ -477,7 +508,7 @@ select {
     box-shadow: 2px 2px 0 #2c2c2c;
 }
 
-/* Duplicate list inside pet center */
+/* Duplicate pet list container */
 .duplicate-list {
     max-height: 200px;
     overflow-y: auto;
@@ -487,6 +518,7 @@ select {
     margin: 10px 0;
 }
 
+/* Each duplicate item row */
 .duplicate-item {
     display: flex;
     align-items: center;
@@ -495,34 +527,34 @@ select {
     border-bottom: 1px dashed #b0a18e;
     font-size: 14px;
 }
-
 .duplicate-item:last-child {
     border-bottom: none;
 }
 
+/* Checkbox in duplicate item */
 .duplicate-item input {
     width: 20px;
     height: 20px;
     cursor: pointer;
 }
 
+/* Duplicate pet image */
 .duplicate-item img {
     width: 32px;
     height: 32px;
     object-fit: contain;
 }
 
+/* Information area with name and reward */
 .duplicate-info {
     flex: 1;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-
 .duplicate-name {
     font-weight: bold;
 }
-
 .duplicate-reward {
     background: #4a3f35;
     color: #ffd966;
@@ -531,7 +563,7 @@ select {
     font-size: 12px;
 }
 
-/* Responsive design for mobile */
+/* Responsive styles for mobile devices */
 @media (max-width: 700px) {
     main {
         grid-template-columns: 1fr;
@@ -600,6 +632,7 @@ select {
     backdrop-filter: blur(4px);
 }
 
+/* Modal content box */
 .cycle-message {
     background: #fff7e8;
     border: 4px solid #4a3f35;
@@ -693,6 +726,7 @@ select {
     margin-top: 8px;
 }
 
+/* Red indicator line in slot machine */
 .slot-indicator {
     position: absolute;
     top: 0;
@@ -723,7 +757,6 @@ select {
     box-shadow: 4px 4px 0 #4a3f35;
     transition: 0.05s linear;
 }
-
 .slot-close:active {
     transform: translate(4px, 4px);
     box-shadow: none;
@@ -784,7 +817,6 @@ select {
     gap: 10px;
     flex-wrap: wrap;
 }
-
 .custom-file-input button {
     margin: 0;
 }
