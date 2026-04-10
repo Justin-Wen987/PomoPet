@@ -5,6 +5,9 @@ import { RARITY_COINS, PET_TYPES, PATHS } from './constants.js';
 import { playGachaSpin, stopGachaSpin, playResultSound, setBackgroundMusic, currentBgmIndex } from './audio.js';
 import { saveState, loadState } from './storage.js';
 
+// Default placeholder image when a pet image fails to load
+const DEFAULT_PET_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23ddd'/%3E%3Ctext x='32' y='32' text-anchor='middle' dy='.3em' fill='%23999'%3E?%3C/text%3E%3C/svg%3E";
+
 // Collection of DOM element references used throughout the UI
 export const elements = {
     tokenSpan: document.getElementById('token-count'),
@@ -84,6 +87,10 @@ function createFlipCol(initialDigit) {
 
 // Build the entire flip clock from scratch with given initial seconds
 export function buildClock(initialSeconds) {
+    // Validate input to prevent NaN or negative values from breaking the UI
+    if (isNaN(initialSeconds) || initialSeconds < 0) {
+        initialSeconds = 0;
+    }
     elements.clockContainer.innerHTML = '';
     colWrappers = [];
     const digits = getDigitArray(initialSeconds);
@@ -147,7 +154,7 @@ export function updateUI(state, currentFilter) {
     elements.buyTokenBtn.disabled = state.coins < 100;
 }
 
-// Render the task list from tasks array
+// Render the task list from tasks array (safe, using DOM methods)
 export function renderTasks(tasks) {
     elements.taskList.innerHTML = '';
     tasks.forEach(task => {
@@ -173,7 +180,7 @@ export function renderTasks(tasks) {
     });
 }
 
-// Render the pet collection gallery with current rarity filter
+// Render the pet collection gallery with current rarity filter (safe, using DOM methods)
 export function renderCollection(pets, currentFilter) {
     let filtered = pets;
     if (currentFilter !== 'all') filtered = pets.filter(p => p.rarity === currentFilter);
@@ -182,7 +189,23 @@ export function renderCollection(pets, currentFilter) {
         const div = document.createElement('div');
         let rarityClass = pet.rarity === 'common' ? 'rarity-common' : (pet.rarity === 'uncommon' ? 'rarity-uncommon' : 'rarity-rare');
         div.className = `pet-item ${rarityClass} ${pet.isDuplicate ? 'duplicate' : ''}`;
-        div.innerHTML = `<img src="${pet.image}" alt="${pet.name}" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23ddd%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2232%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%20fill%3D%22%23999%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E';"><p>${pet.name}</p>${pet.isDuplicate ? '<span class="duplicate-badge">DUPE</span>' : ''}`;
+        
+        const img = document.createElement('img');
+        img.src = pet.image;
+        img.alt = pet.name;
+        img.onerror = () => { img.src = DEFAULT_PET_IMAGE; };
+        div.appendChild(img);
+        
+        const nameP = document.createElement('p');
+        nameP.textContent = pet.name;
+        div.appendChild(nameP);
+        
+        if (pet.isDuplicate) {
+            const badge = document.createElement('span');
+            badge.className = 'duplicate-badge';
+            badge.textContent = 'DUPE';
+            div.appendChild(badge);
+        }
         elements.collectionGrid.appendChild(div);
     });
 }
@@ -207,10 +230,10 @@ export function renderDuplicateList(pets) {
         const img = document.createElement('img');
         img.src = pet.image;
         img.alt = pet.name;
-        img.onerror = () => { img.src = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23ddd%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2232%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%20fill%3D%22%23999%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E'; };
+        img.onerror = () => { img.src = DEFAULT_PET_IMAGE; };
         const infoDiv = document.createElement('div');
         infoDiv.className = 'duplicate-info';
-        infoDiv.innerHTML = `<span class="duplicate-name">${pet.name}</span><span class="duplicate-reward">${RARITY_COINS[pet.rarity]} coins</span>`;
+        infoDiv.innerHTML = `<span class="duplicate-name">${pet.name}</span><span class="duplicate-reward">${RARITY_COINS[pet.rarity] || 0} coins</span>`;
         itemDiv.appendChild(cb);
         itemDiv.appendChild(img);
         itemDiv.appendChild(infoDiv);
@@ -218,20 +241,28 @@ export function renderDuplicateList(pets) {
     });
     elements.duplicateListContainer.innerHTML = '';
     elements.duplicateListContainer.appendChild(container);
-    const checkboxes = document.querySelectorAll('.dupe-checkbox');
+    // Use container as scope for querySelectorAll to avoid global scan
+    const checkboxes = container.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.addEventListener('change', () => updateSelectedRewardPreview(pets)));
     updateSelectedRewardPreview(pets);
 }
 
 // Update the displayed total coin reward based on selected duplicate checkboxes
 export function updateSelectedRewardPreview(pets) {
-    const checkboxes = document.querySelectorAll('.dupe-checkbox');
+    // Scope to duplicateListContainer to avoid global query
+    const container = elements.duplicateListContainer.querySelector('.duplicate-list');
+    if (!container) {
+        elements.selectedRewardSpan.textContent = '+0 Coins';
+        return;
+    }
+    const checkboxes = container.querySelectorAll('.dupe-checkbox');
     let totalReward = 0;
     checkboxes.forEach(cb => {
         if (cb.checked) {
             const petId = cb.value;
-            const pet = pets.find(p => p.id === petId);
-            if (pet) totalReward += RARITY_COINS[pet.rarity];
+            // Use loose equality to handle potential type differences
+            const pet = pets.find(p => p.id == petId);
+            if (pet) totalReward += (RARITY_COINS[pet.rarity] || 0);
         }
     });
     elements.selectedRewardSpan.textContent = `+${totalReward} Coins`;
@@ -273,13 +304,18 @@ export function showRewardPopup() {
     });
 }
 
-// Create and animate a slot machine modal for gacha draws
+// Create and animate a slot machine modal for gacha draws (constants extracted)
 export function createSlotMachine(targetPetIndex, rarity, onClose) {
-    const ITEM_WIDTH = 120;
-    const CENTER_INDEX = 1;
-    const REPEAT_COUNT = 20;
+    // Slot machine configuration constants (no magic numbers)
+    const ITEM_WIDTH = 120;           // Width of each pet item in pixels
+    const CENTER_INDEX = 1;           // Center position index
+    const REPEAT_COUNT = 20;          // Number of times to repeat the pet list for smooth scrolling
+    const EXTRA_CYCLES = 3;           // Number of extra cycles before stopping
+    const ANIMATION_DURATION = 4500;  // Animation duration in milliseconds
+    
     const EXTENDED_PETS = [];
     for (let i = 0; i < REPEAT_COUNT; i++) EXTENDED_PETS.push(...PET_TYPES);
+    
     const modal = document.createElement('div');
     modal.className = 'slot-modal';
     modal.innerHTML = `<div class="slot-container"><div class="slot-window"><div class="slot-track" id="slot-track"></div><div class="slot-indicator"></div></div><div class="slot-message" id="slot-message"></div><button class="slot-close" id="slot-close" style="display: none;">OK</button></div>`;
@@ -287,12 +323,14 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
     const track = modal.querySelector('#slot-track');
     const messageDiv = modal.querySelector('#slot-message');
     const closeBtn = modal.querySelector('#slot-close');
+    
     EXTENDED_PETS.forEach(pet => {
         const div = document.createElement('div');
         div.className = 'slot-pet';
-        div.innerHTML = `<img src="${pet.image}" alt="${pet.name}" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23ddd%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2232%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%20fill%3D%22%23999%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E';"><p>${pet.name}</p>`;
+        div.innerHTML = `<img src="${pet.image}" alt="${pet.name}" onerror="this.src='${DEFAULT_PET_IMAGE}'"><p>${pet.name}</p>`;
         track.appendChild(div);
     });
+    
     const startOffset = 0;
     track.style.transform = `translateX(${startOffset}px)`;
     const targetPet = PET_TYPES[targetPetIndex];
@@ -302,17 +340,17 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
     }
     const targetIdx = targetIndices[Math.floor(targetIndices.length / 2)];
     const targetOffset = -(targetIdx * ITEM_WIDTH) + (CENTER_INDEX * ITEM_WIDTH);
-    const EXTRA_CYCLES = 3;
     const extraDistance = EXTRA_CYCLES * PET_TYPES.length * ITEM_WIDTH;
     const totalDisplacement = (targetOffset - startOffset) - extraDistance;
-    const duration = 4500;
     const startTime = performance.now();
+    
     function easeInOutQuart(t) {
         return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t);
     }
+    
     function animate(now) {
         const elapsed = now - startTime;
-        let t = Math.min(1, elapsed / duration);
+        let t = Math.min(1, elapsed / ANIMATION_DURATION);
         const eased = easeInOutQuart(t);
         const currentX = startOffset + totalDisplacement * eased;
         track.style.transform = `translateX(${currentX}px)`;
@@ -328,6 +366,25 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
         }
     }
     requestAnimationFrame(animate);
+}
+
+// Validate a pet object has all required fields
+function isValidPet(pet) {
+    return pet && typeof pet === 'object' &&
+           typeof pet.id === 'string' &&
+           typeof pet.typeId === 'string' &&
+           typeof pet.rarity === 'string' &&
+           ['common', 'uncommon', 'rare'].includes(pet.rarity) &&
+           typeof pet.name === 'string' &&
+           typeof pet.image === 'string';
+}
+
+// Validate a task object has all required fields
+function isValidTask(task) {
+    return task && typeof task === 'object' &&
+           typeof task.id === 'string' &&
+           typeof task.text === 'string' &&
+           typeof task.completed === 'boolean';
 }
 
 // ---------- Settings Modal ----------
@@ -385,13 +442,38 @@ export function showSettingsModal() {
             reader.onload = function(ev) {
                 try {
                     const imported = JSON.parse(ev.target.result);
+                    // Basic type checks
                     if (typeof imported.tokens === 'number' && typeof imported.coins === 'number' &&
                         Array.isArray(imported.pets) && Array.isArray(imported.tasks)) {
-                        if (imported.tasks) imported.tasks = imported.tasks.map(t => ({ ...t, completed: t.completed || false }));
+                        
+                        // Filter valid pets
+                        const validPets = imported.pets.filter(isValidPet);
+                        // Filter valid tasks and ensure completed field exists
+                        const validTasks = imported.tasks.filter(isValidTask).map(t => ({
+                            ...t,
+                            completed: t.completed === true
+                        }));
+                        
+                        // Show warnings if some items were filtered out
+                        if (validPets.length !== imported.pets.length) {
+                            alert(`Warning: ${imported.pets.length - validPets.length} invalid pet(s) were ignored.`);
+                        }
+                        if (validTasks.length !== imported.tasks.length) {
+                            alert(`Warning: ${imported.tasks.length - validTasks.length} invalid task(s) were ignored.`);
+                        }
+                        
+                        // Replace with cleaned data
+                        imported.pets = validPets;
+                        imported.tasks = validTasks;
+                        
                         document.dispatchEvent(new CustomEvent('import-save', { detail: imported }));
                         closeModal();
-                    } else alert('Invalid save file');
-                } catch(err) { alert('Failed to parse'); }
+                    } else {
+                        alert('Invalid save file: missing required top-level fields.');
+                    }
+                } catch(err) {
+                    alert('Failed to parse JSON file.');
+                }
             };
             reader.readAsText(file);
         }

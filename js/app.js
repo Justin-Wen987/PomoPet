@@ -1,8 +1,7 @@
 // ========== app.js ==========
 // Main application logic: timer, tasks, gacha, recycling, settings
 
-// Import constants and modules
-import { DEFAULT_STATE, PET_TYPES, RARITY_WEIGHTS, RARITY_COINS, PATHS } from './constants.js';
+import { DEFAULT_STATE, PET_TYPES, RARITY_WEIGHTS, RARITY_COINS } from './constants.js';
 import { loadState, saveState } from './storage.js';
 import {
     playGachaSpin, playResultSound, playClockAlarm,
@@ -16,14 +15,14 @@ import {
 } from './ui.js';
 
 // ---------- Game state ----------
-let state = loadState();               // Load saved data or default state
-let timerInterval = null;             // Timer interval ID
-let timerMode = 'work';               // Current timer mode: 'work' or 'break'
-let timeLeft = state.workDuration;    // Seconds remaining in current session
-let isTimerRunning = false;           // Whether timer is actively ticking
-let currentFilter = 'all';            // Current rarity filter for collection gallery
-let workClockTriggered = false;       // Prevents alarm spam for work session
-let breakClockTriggered = false;      // Prevents alarm spam for break session
+let state = loadState();
+let timerInterval = null;
+let timerMode = 'work';
+let timeLeft = state.workDuration;
+let isTimerRunning = false;
+let currentFilter = 'all';
+let workClockTriggered = false;
+let breakClockTriggered = false;
 
 // Generate unique ID for tasks and pets
 function generateId() {
@@ -177,23 +176,29 @@ function setFilter(filter) {
 }
 
 // ---------- Duplicate recycling ----------
-// Select all duplicate checkboxes
+// Select all duplicate checkboxes (scoped to duplicateListContainer)
 function selectAllDuplicates() {
-    const checkboxes = document.querySelectorAll('.dupe-checkbox');
+    const container = elements.duplicateListContainer.querySelector('.duplicate-list');
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.checked = true);
     updateSelectedRewardPreview(state.pets);
 }
 
-// Deselect all duplicate checkboxes
+// Deselect all duplicate checkboxes (scoped to duplicateListContainer)
 function deselectAllDuplicates() {
-    const checkboxes = document.querySelectorAll('.dupe-checkbox');
+    const container = elements.duplicateListContainer.querySelector('.duplicate-list');
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('.dupe-checkbox');
     checkboxes.forEach(cb => cb.checked = false);
     updateSelectedRewardPreview(state.pets);
 }
 
 // Recycle selected duplicate pets: remove them and add coins
 function recycleSelected() {
-    const checkboxes = document.querySelectorAll('.dupe-checkbox:checked');
+    const container = elements.duplicateListContainer.querySelector('.duplicate-list');
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('.dupe-checkbox:checked');
     if (checkboxes.length === 0) {
         alert("Please select at least one duplicate pet to recycle.");
         return;
@@ -202,9 +207,11 @@ function recycleSelected() {
     const idsToRemove = [];
     checkboxes.forEach(cb => {
         const petId = cb.value;
-        const pet = state.pets.find(p => p.id === petId);
+        // Use loose equality for robustness
+        const pet = state.pets.find(p => p.id == petId);
         if (pet) {
-            totalCoins += RARITY_COINS[pet.rarity];
+            // Use || 0 to prevent NaN from invalid rarity
+            totalCoins += (RARITY_COINS[pet.rarity] || 0);
             idsToRemove.push(petId);
         }
     });
