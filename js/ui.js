@@ -87,19 +87,24 @@ export function buildClock(initialSeconds) {
     elements.clockContainer.innerHTML = '';
     colWrappers = [];
     const digits = getDigitArray(initialSeconds);
+    // Create flip columns for minutes
     colWrappers.push(createFlipCol(digits[0]));
     colWrappers.push(createFlipCol(digits[1]));
+    // Append minutes columns
+    elements.clockContainer.appendChild(colWrappers[0].element);
+    elements.clockContainer.appendChild(colWrappers[1].element);
+    // Create and append separator (once)
     const separator = document.createElement('div');
     separator.className = 'separator';
     separator.textContent = ':';
     elements.clockContainer.appendChild(separator);
+    // Create flip columns for seconds
     colWrappers.push(createFlipCol(digits[2]));
     colWrappers.push(createFlipCol(digits[3]));
-    elements.clockContainer.appendChild(colWrappers[0].element);
-    elements.clockContainer.appendChild(colWrappers[1].element);
-    elements.clockContainer.appendChild(separator);
+    // Append seconds columns
     elements.clockContainer.appendChild(colWrappers[2].element);
     elements.clockContainer.appendChild(colWrappers[3].element);
+    // Store current digits for future comparison
     lastDigits = [...digits];
 }
 
