@@ -1,3 +1,4 @@
+// ========== ui.js ==========
 import { RARITY_COINS, PET_TYPES, PATHS } from './constants.js';
 import { playGachaSpin, stopGachaSpin, playResultSound, setBackgroundMusic, currentBgmIndex } from './audio.js';
 import { saveState, loadState } from './storage.js';
@@ -31,6 +32,7 @@ export const elements = {
     clockContainer: document.getElementById('flip-clock')
 };
 
+// Flip clock internal variables
 let colWrappers = [];
 let lastDigits = ['0','0','0','0'];
 
@@ -308,7 +310,7 @@ export function createSlotMachine(targetPetIndex, rarity, onClose) {
     requestAnimationFrame(animate);
 }
 
-// ---------- Settings Modal (moved from app.js) ----------
+// ---------- Settings Modal ----------
 export function showSettingsModal() {
     const modal = document.createElement('div');
     modal.className = 'settings-modal';
@@ -340,7 +342,7 @@ export function showSettingsModal() {
         setBackgroundMusic(idx);
     });
     exportBtn.addEventListener('click', () => {
-        const state = loadState();  // 获取当前状态
+        const state = loadState();
         const saveData = JSON.stringify(state, null, 2);
         const blob = new Blob([saveData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -365,7 +367,6 @@ export function showSettingsModal() {
                     if (typeof imported.tokens === 'number' && typeof imported.coins === 'number' &&
                         Array.isArray(imported.pets) && Array.isArray(imported.tasks)) {
                         if (imported.tasks) imported.tasks = imported.tasks.map(t => ({ ...t, completed: t.completed || false }));
-                        // 需要将状态保存并刷新UI，这里通过事件通知app.js
                         document.dispatchEvent(new CustomEvent('import-save', { detail: imported }));
                         closeModal();
                     } else alert('Invalid save file');
