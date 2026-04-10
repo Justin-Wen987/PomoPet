@@ -37,7 +37,7 @@
   - Common: +5 Coins
   - Uncommon: +10 Coins
   - Rare: +20 Coins
-- Exchange 100 Coins for 1 Token (self-contained in-app economy)
+- Exchange 100 Coins for 1 Token
 
 ### 💾 6. Data Persistence
 - All game progress (Tokens, Coins, pet collection) saved to browser `localStorage`
@@ -46,7 +46,6 @@
 ### 🔊 7. Immersive Audio
 - Background music with multiple tracks (user selectable)
 - Sound effects for gacha spins, pet reveals, and timer alarms
-- Volume ducking: BGM automatically lowers when SFX plays
 
 ---
 
@@ -68,19 +67,19 @@ This positive feedback loop keeps you coming back to manage your time while fill
 
 PomoPet is a lightweight, client-side single-page application (SPA) with no backend dependencies.
 
-- **Language**: JavaScript (ES6+ modules)
-- **Styling**: CSS3 (custom pixel‑art styling, responsive design)
+- **Language**: JavaScript
+- **Styling**: CSS
 - **Data Persistence**: Web Storage API (`localStorage`)
-- **Audio**: Web Audio API (background music, sound effects, volume ducking)
+- **Audio**: Web Audio API
 - **Version Control**: Git & GitHub
 - **Deployment**: GitHub Pages
 
 ### System Architecture
 
 ```
-User Browser
-      │
-      ▼
+                         User Browser
+                             │
+                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   HTML / CSS / JavaScript                   │
 ├──────────────┬──────────────┬──────────────┬────────────────┤
@@ -115,7 +114,7 @@ pomopet/
 ├── js/
 │   ├── app.js              # Main application logic
 │   ├── constants.js        # Static data (pets, audio paths, etc.)
-│   ├── audio.js            # Audio management (BGM + SFX with ducking)
+│   ├── audio.js            # Audio management
 │   ├── storage.js          # localStorage read/write wrapper
 │   └── ui.js               # UI rendering and DOM manipulation
 ├── image/                  # Game assets (pet icons, logo, etc.)
@@ -129,50 +128,18 @@ pomopet/
 
 ---
 
-## 🚀 Getting Started
-
-Follow these steps to run the project locally.
-
-### Prerequisites
-
-- A modern web browser (Chrome, Firefox, Safari, Edge)
-- A local web server (Python's `http.server` or VS Code Live Server)
-
-### Installation & Running
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/pomopet.git
-   cd pomopet
-   ```
-
-2. **Start a local server**
-   ```bash
-   # Using Python 3
-   python -m http.server 5173
-   
-   # Or use VS Code Live Server extension
-   ```
-
-3. **Open your browser**
-   Navigate to `http://localhost:5173` to start using PomoPet.
-
----
-
 ## 🧪 Testing & Quality Assurance
 
 The following testing strategies were implemented to ensure reliability:
 
 - **Manual Functional Testing**: End-to-end testing of all user stories (timer, gacha, shop, etc.)
 - **Data Persistence Testing**: Verified data restoration after page refresh and browser restart
-- **User Acceptance Testing**: Gathered feedback from target users (college and high school students)
+- **User Acceptance Testing**: Gathered feedback from target users (college students)
 - **Code Review**: Peer review to maintain code quality and consistency
 
 ---
 
 ## 📅 Development Timeline
-
-The project followed an agile-inspired approach over 12 weeks:
 
 **Phase 1: Foundation & Design** (Weeks 1-2)  
 - Project setup, design finalization, initial asset creation
@@ -208,7 +175,7 @@ The project followed an agile-inspired approach over 12 weeks:
   - Frontend development (JavaScript, HTML, CSS, modular architecture)
   - UI/UX design and user experience optimization
   - Original pixel art asset creation (pets, UI elements, icons)
-  - Audio integration and volume ducking logic
+  - Audio logic
   - Testing strategy and quality assurance
 
 ---
