@@ -78,15 +78,24 @@ export function playClockAlarm() { playSound(clockAudio); }
 
 // Load saved background music preference from localStorage
 export function loadBgmPreference() {
-    const saved = localStorage.getItem('pomopet_bgm_index');
-    if (saved !== null) {
-        currentBgmIndex = parseInt(saved, 10);
+    // Load background music index
+    const savedIndex = localStorage.getItem('pomopet_bgm_index');
+    if (savedIndex !== null) {
+        currentBgmIndex = parseInt(savedIndex, 10);
         if (isNaN(currentBgmIndex) || currentBgmIndex < 0 || currentBgmIndex >= PATHS.bgmList.length) {
             currentBgmIndex = 0;
         }
     }
     bgmAudio.src = PATHS.bgmList[currentBgmIndex].file;
     bgmAudio.load();
+
+    // Load mute state
+    const savedMute = localStorage.getItem('pomopet_bgm_mute');
+    if (savedMute !== null) {
+        bgmMuted = savedMute === 'true';
+    } else {
+        bgmMuted = false;
+    }
 }
 
 // Save current background music index to localStorage
