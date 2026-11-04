@@ -286,7 +286,7 @@ function handleImportSave(imported) {
 // Handle clear all data request from settings modal
 function handleClearData() {
     localStorage.removeItem('pomopet_data');
-    state = { ...DEFAULT_STATE };
+    state = structuredClone(DEFAULT_STATE);
     saveState(state);
     stopTimer();
     timerMode = 'work';

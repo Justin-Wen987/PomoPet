@@ -18,10 +18,10 @@ export function loadState() {
             }
             return parsed;
         } catch(e) {
-            return { ...DEFAULT_STATE };
+            return structuredClone(DEFAULT_STATE);
         }
     }
-    return { ...DEFAULT_STATE };
+    return structuredClone(DEFAULT_STATE);
 }
 
 // Save current game state to localStorage
